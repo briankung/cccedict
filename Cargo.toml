@@ -1,0 +1,11 @@
+[package]
+name = "bk-nom-tutorial"
+version = "0.1.0"
+authors = ["Brian Kung <github@briankung.xyz>"]
+edition = "2018"
+
+[dependencies]
+nom = "6.1.2"
+
+[profile.dev]
+# split-debuginfo = "unpacked"
