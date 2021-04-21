@@ -17,6 +17,15 @@ pub struct Syllable<'a> {
     tone: &'a str,
 }
 
+impl<'a> Syllable<'a> {
+    fn new(pronunciation: &'a str, tone: &'a str) -> Self {
+        Syllable {
+            pronunciation,
+            tone,
+        }
+    }
+}
+
 pub(self) mod parsers {
     use super::*;
 
@@ -59,13 +68,7 @@ pub(self) mod parsers {
             nom::character::complete::digit0,
         ))(i)?;
 
-        Ok((
-            rest,
-            Syllable {
-                pronunciation,
-                tone,
-            },
-        ))
+        Ok((rest, Syllable::new(pronunciation, tone)))
     }
 
     fn definitions(i: &str) -> nom::IResult<&str, Vec<&str>> {
@@ -113,47 +116,31 @@ pub(self) mod parsers {
         }
 
         #[test]
+        fn test_syllable_init() {
+            assert_eq!(
+                Syllable::new("ni", "3"),
+                Syllable {
+                    pronunciation: "ni",
+                    tone: "3"
+                }
+            )
+        }
+
+        #[test]
         fn test_parse_pinyin() {
             assert_eq!(
                 pinyin("[ni3 hao3]"),
                 Ok((
                     "",
-                    vec![
-                        Syllable {
-                            pronunciation: "ni",
-                            tone: "3"
-                        },
-                        Syllable {
-                            pronunciation: "hao",
-                            tone: "3"
-                        }
-                    ]
+                    vec![Syllable::new("ni", "3"), Syllable::new("hao", "3")]
                 ))
             )
         }
 
         #[test]
         fn test_parse_pinyin_syllable() {
-            assert_eq!(
-                syllable("ni3"),
-                Ok((
-                    "",
-                    Syllable {
-                        pronunciation: "ni",
-                        tone: "3"
-                    }
-                ))
-            );
-            assert_eq!(
-                syllable("hao3"),
-                Ok((
-                    "",
-                    Syllable {
-                        pronunciation: "hao",
-                        tone: "3"
-                    }
-                ))
-            );
+            assert_eq!(syllable("ni3"), Ok(("", Syllable::new("ni", "3"))));
+            assert_eq!(syllable("hao3"), Ok(("", Syllable::new("hao", "3"))));
         }
 
         #[test]
@@ -162,32 +149,14 @@ pub(self) mod parsers {
                 jyutping("{jat1 go3}"),
                 Ok((
                     "",
-                    vec![
-                        Syllable {
-                            pronunciation: "jat",
-                            tone: "1"
-                        },
-                        Syllable {
-                            pronunciation: "go",
-                            tone: "3"
-                        }
-                    ]
+                    vec![Syllable::new("jat", "1"), Syllable::new("go", "3")]
                 ))
             );
             assert_eq!(
                 jyutping("{jat1go3}"),
                 Ok((
                     "",
-                    vec![
-                        Syllable {
-                            pronunciation: "jat",
-                            tone: "1"
-                        },
-                        Syllable {
-                            pronunciation: "go",
-                            tone: "3"
-                        }
-                    ]
+                    vec![Syllable::new("jat", "1"), Syllable::new("go", "3")]
                 ))
             )
         }
@@ -210,32 +179,14 @@ pub(self) mod parsers {
         //             traditional: "抄字典",
         //             simplified: "抄字典",
         //             pinyin: vec![
-        //                 Syllable {
-        //                     pronunciation: "chao",
-        //                     tone: "1"
-        //                 },
-        //                 Syllable {
-        //                     pronunciation: "zi",
-        //                     tone: "4"
-        //                 },
-        //                 Syllable {
-        //                     pronunciation: "dian",
-        //                     tone: "3"
-        //                 }
+        //                 Syllable::new("chao","1"),
+        //                 Syllable::new("zi","4"),
+        //                 Syllable::new("dian","3"),
         //             ],
         //             jyutping: vec![
-        //                 Syllable {
-        //                     pronunciation: "caau",
-        //                     tone: "3"
-        //                 },
-        //                 Syllable {
-        //                     pronunciation: "zi",
-        //                     tone: "6"
-        //                 },
-        //                 Syllable {
-        //                     pronunciation: "din",
-        //                     tone: "2"
-        //                 }
+        //                 Syllable::new("caau","3"),
+        //                 Syllable::new("zi","6"),
+        //                 Syllable::new("din","2"),
         //             ],
         //             definitions: vec!["to search ", " flip through a dictionary [colloquial]"]
         //         }
