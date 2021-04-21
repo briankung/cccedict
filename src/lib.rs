@@ -43,10 +43,7 @@ pub(self) mod parsers {
     fn pinyin(i: &str) -> nom::IResult<&str, Vec<Syllable>> {
         nom::sequence::delimited(
             nom::bytes::complete::tag("["),
-            nom::multi::separated_list1(
-                nom::bytes::complete::tag(" "),
-                nom::combinator::map_parser(nom::bytes::complete::is_not(" ]"), syllable),
-            ),
+            syllables,
             nom::bytes::complete::tag("]"),
         )(i)
     }
@@ -54,10 +51,7 @@ pub(self) mod parsers {
     fn jyutping(i: &str) -> nom::IResult<&str, Vec<Syllable>> {
         nom::sequence::delimited(
             nom::bytes::complete::tag("{"),
-            nom::multi::separated_list1(
-                nom::bytes::complete::tag(" "),
-                nom::combinator::map_parser(nom::bytes::complete::is_not(" }"), syllable),
-            ),
+            syllables,
             nom::bytes::complete::tag("}"),
         )(i)
     }
@@ -69,6 +63,16 @@ pub(self) mod parsers {
         ))(i)?;
 
         Ok((rest, Syllable::new(pronunciation, tone)))
+    }
+
+    /// takes a series of undelimited syllables such as "ni3hao3" and returns a Vec of Syllables
+    fn syllables(i: &str) -> nom::IResult<&str, Vec<Syllable>> {
+        let (rest, syllables) = nom::multi::separated_list0(
+            nom::bytes::complete::tag(" "),
+            nom::multi::many1(syllable),
+        )(i)?;
+        let syllables: Vec<Syllable> = syllables.into_iter().flatten().collect();
+        Ok((rest, syllables))
     }
 
     fn definitions(i: &str) -> nom::IResult<&str, Vec<&str>> {
@@ -134,13 +138,48 @@ pub(self) mod parsers {
                     "",
                     vec![Syllable::new("ni", "3"), Syllable::new("hao", "3")]
                 ))
-            )
+            );
+
+            assert_eq!(
+                pinyin("[ni3hao3 ma5]"),
+                Ok((
+                    "",
+                    vec![
+                        Syllable::new("ni", "3"),
+                        Syllable::new("hao", "3"),
+                        Syllable::new("ma", "5")
+                    ]
+                ))
+            );
+
+            assert_eq!(
+                pinyin("[ ni3hao3 ma5 ]"),
+                Ok((
+                    "",
+                    vec![
+                        Syllable::new("ni", "3"),
+                        Syllable::new("hao", "3"),
+                        Syllable::new("ma", "5")
+                    ]
+                ))
+            );
         }
 
         #[test]
         fn test_parse_pinyin_syllable() {
             assert_eq!(syllable("ni3"), Ok(("", Syllable::new("ni", "3"))));
             assert_eq!(syllable("hao3"), Ok(("", Syllable::new("hao", "3"))));
+        }
+
+        #[test]
+        fn test_parse_syllables() {
+            assert_eq!(
+                syllables("ni3hao3"),
+                Ok((
+                    "",
+                    vec![Syllable::new("ni", "3"), Syllable::new("hao", "3")]
+                ))
+            );
         }
 
         #[test]
