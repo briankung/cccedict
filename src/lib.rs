@@ -41,38 +41,42 @@ pub(self) mod parsers {
     }
 
     fn pinyin(i: &str) -> nom::IResult<&str, Vec<Syllable>> {
-        nom::sequence::delimited(
+        let (rest, delimited_syllables) = nom::sequence::delimited(
             nom::bytes::complete::tag("["),
-            syllables,
+            nom::bytes::complete::is_not("]"),
             nom::bytes::complete::tag("]"),
-        )(i)
+        )(i)?;
+
+        let (_, syllables) = syllables(delimited_syllables)?;
+
+        Ok((rest, syllables))
     }
 
     fn jyutping(i: &str) -> nom::IResult<&str, Vec<Syllable>> {
-        nom::sequence::delimited(
+        let (rest, delimited_syllables) = nom::sequence::delimited(
             nom::bytes::complete::tag("{"),
-            syllables,
+            nom::bytes::complete::is_not("}"),
             nom::bytes::complete::tag("}"),
-        )(i)
+        )(i)?;
+
+        let (_, syllables) = syllables(delimited_syllables)?;
+
+        Ok((rest, syllables))
+    }
+
+    /// takes a series of undelimited syllables such as "ni3hao3" and returns a Vec of Syllables
+    fn syllables(i: &str) -> nom::IResult<&str, Vec<Syllable>> {
+        nom::multi::many1(syllable)(i)
     }
 
     fn syllable(i: &str) -> nom::IResult<&str, Syllable> {
-        let (rest, (pronunciation, tone)) = nom::sequence::tuple((
+        let (rest, (_, pronunciation, tone)) = nom::sequence::tuple((
+            nom::character::complete::space0,
             nom::character::complete::alpha1,
             nom::character::complete::digit0,
         ))(i)?;
 
         Ok((rest, Syllable::new(pronunciation, tone)))
-    }
-
-    /// takes a series of undelimited syllables such as "ni3hao3" and returns a Vec of Syllables
-    fn syllables(i: &str) -> nom::IResult<&str, Vec<Syllable>> {
-        let (rest, syllables) = nom::multi::separated_list0(
-            nom::bytes::complete::tag(" "),
-            nom::multi::many1(syllable),
-        )(i)?;
-        let syllables: Vec<Syllable> = syllables.into_iter().flatten().collect();
-        Ok((rest, syllables))
     }
 
     fn definitions(i: &str) -> nom::IResult<&str, Vec<&str>> {
