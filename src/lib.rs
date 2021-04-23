@@ -2,12 +2,12 @@
 
 pub type BoxError = std::boxed::Box<dyn std::error::Error + std::marker::Send + std::marker::Sync>;
 
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct CedictEntry<'a> {
     pub traditional: &'a str,
     pub simplified: &'a str,
     pub pinyin: Vec<Syllable<'a>>,
-    pub jyutping: Vec<Syllable<'a>>,
+    pub jyutping: Option<Vec<Syllable<'a>>>,
     pub definitions: Vec<&'a str>,
 }
 
@@ -28,6 +28,29 @@ impl<'a> Syllable<'a> {
 
 pub(self) mod parsers {
     use super::*;
+
+    pub fn parse_line(i: &str) -> nom::IResult<&str, CedictEntry> {
+        let (i, traditional) = not_whitespace(i)?;
+        let (i, _) = nom::bytes::complete::tag(" ")(i)?;
+        let (i, simplified) = not_whitespace(i)?;
+        let (i, _) = nom::bytes::complete::tag(" ")(i)?;
+        let (i, pinyin) = pinyin(i)?;
+        let (i, _) = nom::bytes::complete::tag(" ")(i)?;
+        let (i, jyutping) = nom::combinator::opt(jyutping)(i)?;
+        let (i, _) = nom::bytes::complete::tag(" ")(i)?;
+        let (i, definitions) = definitions(i)?;
+
+        Ok((
+            i,
+            CedictEntry {
+                traditional,
+                simplified,
+                pinyin,
+                jyutping,
+                definitions,
+            },
+        ))
+    }
 
     fn comment(i: &str) -> nom::IResult<&str, (&str, &str)> {
         nom::sequence::tuple((
@@ -212,28 +235,30 @@ pub(self) mod parsers {
             )
         }
 
-        // #[test]
-        // #[ignore]
-        // fn test_parse_line() {
-        //     let line = "抄字典 抄字典 [chao1 zi4dian3] {caau3 zi6 din2} /to search / flip through a dictionary [colloquial]/";
-        //     assert_eq!(
-        //         parse_line(line),
-        //         CedictEntry {
-        //             traditional: "抄字典",
-        //             simplified: "抄字典",
-        //             pinyin: vec![
-        //                 Syllable::new("chao","1"),
-        //                 Syllable::new("zi","4"),
-        //                 Syllable::new("dian","3"),
-        //             ],
-        //             jyutping: vec![
-        //                 Syllable::new("caau","3"),
-        //                 Syllable::new("zi","6"),
-        //                 Syllable::new("din","2"),
-        //             ],
-        //             definitions: vec!["to search ", " flip through a dictionary [colloquial]"]
-        //         }
-        //     )
-        // }
+        #[test]
+        fn test_parse_line() {
+            let line = "抄字典 抄字典 [chao1 zi4dian3] {caau3 zi6 din2} /to search / flip through a dictionary [colloquial]/";
+            assert_eq!(
+                parse_line(line),
+                Ok((
+                    "",
+                    CedictEntry {
+                        traditional: "抄字典",
+                        simplified: "抄字典",
+                        pinyin: vec![
+                            Syllable::new("chao", "1"),
+                            Syllable::new("zi", "4"),
+                            Syllable::new("dian", "3"),
+                        ],
+                        jyutping: Some(vec![
+                            Syllable::new("caau", "3"),
+                            Syllable::new("zi", "6"),
+                            Syllable::new("din", "2"),
+                        ]),
+                        definitions: vec!["to search ", " flip through a dictionary [colloquial]"]
+                    }
+                ))
+            )
+        }
     }
 }
