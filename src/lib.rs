@@ -101,14 +101,16 @@ pub(self) mod parsers {
     }
 
     fn definitions(i: &str) -> nom::IResult<&str, Vec<&str>> {
-        nom::sequence::delimited(
+        let (rest, untrimmed_defs) = nom::sequence::delimited(
             nom::bytes::complete::tag("/"),
             nom::multi::separated_list0(
                 nom::bytes::complete::tag("/"),
                 nom::bytes::complete::is_not("/"),
             ),
             nom::bytes::complete::tag("/"),
-        )(i)
+        )(i)?;
+
+        Ok((rest, untrimmed_defs.iter().map(|x| x.trim()).collect()))
     }
 
     #[cfg(test)]
@@ -132,6 +134,22 @@ pub(self) mod parsers {
         fn test_parse_definitions() {
             assert_eq!(
                 definitions("/watch a movie/three goals/card/(deck of playing cards)/"),
+                Ok((
+                    "",
+                    vec![
+                        "watch a movie",
+                        "three goals",
+                        "card",
+                        "(deck of playing cards)",
+                    ]
+                ))
+            )
+        }
+
+        #[test]
+        fn test_parse_definitions_are_trimmed() {
+            assert_eq!(
+                definitions("/  watch a movie  / three goals/card/(deck of playing cards) /"),
                 Ok((
                     "",
                     vec![
@@ -253,7 +271,7 @@ pub(self) mod parsers {
                             Syllable::new("zi", "6"),
                             Syllable::new("din", "2"),
                         ]),
-                        definitions: vec!["to search ", " flip through a dictionary [colloquial]"]
+                        definitions: vec!["to search", "flip through a dictionary [colloquial]"]
                     }
                 ))
             )
