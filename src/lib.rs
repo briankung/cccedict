@@ -46,7 +46,7 @@ pub(self) mod parsers {
         let (i, pinyin) = pinyin(i)?;
         let (i, _) = nom::bytes::complete::tag(" ")(i)?;
         let (i, jyutping) = nom::combinator::opt(jyutping)(i)?;
-        let (i, _) = nom::bytes::complete::tag(" ")(i)?;
+        let (i, _) = nom::character::complete::space0(i)?;
         let (i, definitions) = definitions(i)?;
 
         Ok((
@@ -289,6 +289,40 @@ pub(self) mod parsers {
         }
 
         #[test]
-        fn test_parse_line() {}
+        fn test_parse_entry_without_jyutping() {
+            let line = "抄字典 抄字典 [chao1 zi4dian3] /to search / flip through a dictionary [colloquial]/";
+            assert_eq!(
+                parse_entry(line),
+                Ok((
+                    "",
+                    CedictEntry {
+                        traditional: "抄字典",
+                        simplified: "抄字典",
+                        pinyin: vec![
+                            Syllable::new("chao", "1"),
+                            Syllable::new("zi", "4"),
+                            Syllable::new("dian", "3"),
+                        ],
+                        jyutping: None,
+                        definitions: vec!["to search", "flip through a dictionary [colloquial]"]
+                    }
+                ))
+            )
+        }
+
+        #[test]
+        fn test_parse_lines() -> Result<(), BoxError> {
+            let lines = [
+                "# this is a comment",
+                "抄字典 抄字典 [chao1 zi4dian3] {caau3 zi6 din2} /to search / flip through a dictionary [colloquial]/",
+                "以身作則 以身作则 [yi3 shen1 zuo4 ze2] /to set an example (idiom); to serve as a model/",
+            ];
+
+            for line in lines.iter() {
+                parse_line(line)?;
+            }
+
+            Ok(())
+        }
     }
 }
