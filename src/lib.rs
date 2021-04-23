@@ -27,7 +27,18 @@ impl<'a> Syllable<'a> {
 pub(self) mod parsers {
     use super::*;
 
-    pub fn parse_line(i: &str) -> nom::IResult<&str, CedictEntry> {
+    pub fn parse_line(i: &str) -> nom::IResult<&str, Option<CedictEntry>> {
+        let is_comment = nom::combinator::all_consuming(comment)(i).is_ok();
+
+        if is_comment {
+            Ok(("", None))
+        } else {
+            let (_, entry) = nom::combinator::all_consuming(parse_entry)(i)?;
+            Ok(("", Some(entry)))
+        }
+    }
+
+    fn parse_entry(i: &str) -> nom::IResult<&str, CedictEntry> {
         let (i, traditional) = not_whitespace(i)?;
         let (i, _) = nom::bytes::complete::tag(" ")(i)?;
         let (i, simplified) = not_whitespace(i)?;
@@ -252,10 +263,10 @@ pub(self) mod parsers {
         }
 
         #[test]
-        fn test_parse_line() {
+        fn test_parse_entry() {
             let line = "抄字典 抄字典 [chao1 zi4dian3] {caau3 zi6 din2} /to search / flip through a dictionary [colloquial]/";
             assert_eq!(
-                parse_line(line),
+                parse_entry(line),
                 Ok((
                     "",
                     CedictEntry {
@@ -276,5 +287,8 @@ pub(self) mod parsers {
                 ))
             )
         }
+
+        #[test]
+        fn test_parse_line() {}
     }
 }
