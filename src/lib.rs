@@ -26,27 +26,28 @@ impl<'a> Syllable<'a> {
 
 pub(self) mod parsers {
     use super::*;
+    use nom::{bytes, character, combinator, multi, sequence, IResult};
 
-    pub fn parse_line(i: &str) -> nom::IResult<&str, Option<CedictEntry>> {
-        let is_comment = nom::combinator::all_consuming(comment)(i).is_ok();
+    pub fn parse_line(i: &str) -> IResult<&str, Option<CedictEntry>> {
+        let is_comment = combinator::all_consuming(comment)(i).is_ok();
 
         if is_comment {
             Ok(("", None))
         } else {
-            let (_, entry) = nom::combinator::all_consuming(parse_entry)(i)?;
+            let (_, entry) = combinator::all_consuming(parse_entry)(i)?;
             Ok(("", Some(entry)))
         }
     }
 
-    fn parse_entry(i: &str) -> nom::IResult<&str, CedictEntry> {
+    fn parse_entry(i: &str) -> IResult<&str, CedictEntry> {
         let (i, traditional) = not_whitespace(i)?;
-        let (i, _) = nom::bytes::complete::tag(" ")(i)?;
+        let (i, _) = bytes::complete::tag(" ")(i)?;
         let (i, simplified) = not_whitespace(i)?;
-        let (i, _) = nom::bytes::complete::tag(" ")(i)?;
+        let (i, _) = bytes::complete::tag(" ")(i)?;
         let (i, pinyin) = pinyin(i)?;
-        let (i, _) = nom::bytes::complete::tag(" ")(i)?;
-        let (i, jyutping) = nom::combinator::opt(jyutping)(i)?;
-        let (i, _) = nom::character::complete::space0(i)?;
+        let (i, _) = bytes::complete::tag(" ")(i)?;
+        let (i, jyutping) = combinator::opt(jyutping)(i)?;
+        let (i, _) = character::complete::space0(i)?;
         let (i, definitions) = definitions(i)?;
 
         Ok((
@@ -61,22 +62,22 @@ pub(self) mod parsers {
         ))
     }
 
-    fn comment(i: &str) -> nom::IResult<&str, (&str, &str)> {
-        nom::sequence::tuple((
-            nom::bytes::complete::tag("#"),
-            nom::character::complete::not_line_ending,
+    fn comment(i: &str) -> IResult<&str, (&str, &str)> {
+        sequence::tuple((
+            bytes::complete::tag("#"),
+            character::complete::not_line_ending,
         ))(i)
     }
 
-    fn not_whitespace(i: &str) -> nom::IResult<&str, &str> {
-        nom::bytes::complete::is_not(" \t")(i)
+    fn not_whitespace(i: &str) -> IResult<&str, &str> {
+        bytes::complete::is_not(" \t")(i)
     }
 
-    fn pinyin(i: &str) -> nom::IResult<&str, Vec<Syllable>> {
-        let (rest, delimited_syllables) = nom::sequence::delimited(
-            nom::bytes::complete::tag("["),
-            nom::bytes::complete::is_not("]"),
-            nom::bytes::complete::tag("]"),
+    fn pinyin(i: &str) -> IResult<&str, Vec<Syllable>> {
+        let (rest, delimited_syllables) = sequence::delimited(
+            bytes::complete::tag("["),
+            bytes::complete::is_not("]"),
+            bytes::complete::tag("]"),
         )(i)?;
 
         let (_, syllables) = syllables(delimited_syllables)?;
@@ -84,11 +85,11 @@ pub(self) mod parsers {
         Ok((rest, syllables))
     }
 
-    fn jyutping(i: &str) -> nom::IResult<&str, Vec<Syllable>> {
-        let (rest, delimited_syllables) = nom::sequence::delimited(
-            nom::bytes::complete::tag("{"),
-            nom::bytes::complete::is_not("}"),
-            nom::bytes::complete::tag("}"),
+    fn jyutping(i: &str) -> IResult<&str, Vec<Syllable>> {
+        let (rest, delimited_syllables) = sequence::delimited(
+            bytes::complete::tag("{"),
+            bytes::complete::is_not("}"),
+            bytes::complete::tag("}"),
         )(i)?;
 
         let (_, syllables) = syllables(delimited_syllables)?;
@@ -97,28 +98,25 @@ pub(self) mod parsers {
     }
 
     /// takes a series of undelimited syllables such as "ni3hao3" and returns a Vec of Syllables
-    fn syllables(i: &str) -> nom::IResult<&str, Vec<Syllable>> {
-        nom::multi::many1(syllable)(i)
+    fn syllables(i: &str) -> IResult<&str, Vec<Syllable>> {
+        multi::many1(syllable)(i)
     }
 
-    fn syllable(i: &str) -> nom::IResult<&str, Syllable> {
-        let (rest, (_, pronunciation, tone)) = nom::sequence::tuple((
-            nom::character::complete::space0,
-            nom::character::complete::alpha1,
-            nom::character::complete::digit0,
+    fn syllable(i: &str) -> IResult<&str, Syllable> {
+        let (rest, (_, pronunciation, tone)) = sequence::tuple((
+            character::complete::space0,
+            character::complete::alpha1,
+            character::complete::digit0,
         ))(i)?;
 
         Ok((rest, Syllable::new(pronunciation, tone)))
     }
 
-    fn definitions(i: &str) -> nom::IResult<&str, Vec<&str>> {
-        let (rest, untrimmed_defs) = nom::sequence::delimited(
-            nom::bytes::complete::tag("/"),
-            nom::multi::separated_list0(
-                nom::bytes::complete::tag("/"),
-                nom::bytes::complete::is_not("/"),
-            ),
-            nom::bytes::complete::tag("/"),
+    fn definitions(i: &str) -> IResult<&str, Vec<&str>> {
+        let (rest, untrimmed_defs) = sequence::delimited(
+            bytes::complete::tag("/"),
+            multi::separated_list0(bytes::complete::tag("/"), bytes::complete::is_not("/")),
+            bytes::complete::tag("/"),
         )(i)?;
 
         Ok((rest, untrimmed_defs.iter().map(|x| x.trim()).collect()))
