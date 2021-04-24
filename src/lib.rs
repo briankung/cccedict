@@ -158,9 +158,38 @@ pub mod parsers {
         #[test]
         fn test_parse_definitions() {
             assert_eq!(
+                definitions("/watch a movie/three goals/card/(deck of playing cards)/"),
+                Ok((
+                    "",
+                    Some(vec![
+                        "watch a movie",
+                        "three goals",
+                        "card",
+                        "(deck of playing cards)",
+                    ])
+                ))
+            )
+        }
+
+        #[test]
+        fn test_parse_definitions_with_comments() {
+            assert_eq!(
                 definitions("/watch a movie/three goals/card/(deck of playing cards)/ # hi"),
                 Ok((
                     " # hi",
+                    Some(vec![
+                        "watch a movie",
+                        "three goals",
+                        "card",
+                        "(deck of playing cards)",
+                    ])
+                ))
+            );
+
+            assert_eq!(
+                definitions("/watch a movie/three goals/card/(deck of playing cards)/# hi"),
+                Ok((
+                    "# hi",
                     Some(vec![
                         "watch a movie",
                         "three goals",
