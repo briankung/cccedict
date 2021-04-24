@@ -34,12 +34,12 @@ pub mod parsers {
         if is_comment {
             Ok(("", None))
         } else {
-            let (_, entry) = combinator::all_consuming(parse_entry)(i)?;
+            let (_, entry) = combinator::all_consuming(cedict_entry)(i)?;
             Ok(("", Some(entry)))
         }
     }
 
-    fn parse_entry(i: &str) -> IResult<&str, CedictEntry> {
+    fn cedict_entry(i: &str) -> IResult<&str, CedictEntry> {
         let (i, traditional) = not_whitespace(i)?;
         let (i, _) = character::complete::space1(i)?;
         let (i, simplified) = not_whitespace(i)?;
@@ -261,10 +261,10 @@ pub mod parsers {
         }
 
         #[test]
-        fn test_parse_entry() {
+        fn test_cedict_entry() {
             let line = "抄字典 抄字典 [chao1 zi4dian3] {caau3 zi6 din2} /to search / flip through a dictionary [colloquial]/";
             assert_eq!(
-                parse_entry(line),
+                cedict_entry(line),
                 Ok((
                     "",
                     CedictEntry {
@@ -287,10 +287,10 @@ pub mod parsers {
         }
 
         #[test]
-        fn test_parse_entry_without_jyutping() {
+        fn test_cedict_entry_without_jyutping() {
             let line = "抄字典 抄字典 [chao1 zi4dian3] /to search / flip through a dictionary [colloquial]/";
             assert_eq!(
-                parse_entry(line),
+                cedict_entry(line),
                 Ok((
                     "",
                     CedictEntry {
