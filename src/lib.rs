@@ -11,8 +11,8 @@ pub struct CedictEntry<'a> {
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub struct Syllable<'a> {
-    pronunciation: &'a str,
-    tone: &'a str,
+    pub pronunciation: &'a str,
+    pub tone: &'a str,
 }
 
 impl<'a> Syllable<'a> {
