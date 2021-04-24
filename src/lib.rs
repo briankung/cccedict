@@ -4,12 +4,12 @@ pub type BoxError = std::boxed::Box<dyn std::error::Error + std::marker::Send + 
 pub struct CedictEntry<'a> {
     pub traditional: &'a str,
     pub simplified: &'a str,
-    pub pinyin: Vec<Syllable<'a>>,
+    pub pinyin: Option<Vec<Syllable<'a>>>,
     pub jyutping: Option<Vec<Syllable<'a>>>,
-    pub definitions: Vec<&'a str>,
+    pub definitions: Option<Vec<&'a str>>,
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub struct Syllable<'a> {
     pronunciation: &'a str,
     tone: &'a str,
@@ -29,12 +29,12 @@ pub mod parsers {
     use nom::{bytes, character, combinator, multi, sequence, IResult};
 
     pub fn parse_line(i: &str) -> IResult<&str, Option<CedictEntry>> {
-        combinator::all_consuming(|input| {
-            let (input, entry) = combinator::opt(cedict_entry)(input)?;
-            let (input, _) = character::complete::space0(input)?;
-            let (input, _) = combinator::opt(comment)(input)?;
+        combinator::all_consuming(|i| {
+            let (i, entry) = combinator::opt(cedict_entry)(i)?;
+            let (i, _) = character::complete::space0(i)?;
+            let (i, _) = combinator::opt(comment)(i)?;
 
-            Ok((input, entry))
+            Ok((i, entry))
         })(i)
     }
 
@@ -72,33 +72,38 @@ pub mod parsers {
         bytes::complete::is_not(" \t")(i)
     }
 
-    fn pinyin(i: &str) -> IResult<&str, Vec<Syllable>> {
-        let (rest, delimited_syllables) = sequence::delimited(
+    fn pinyin(i: &str) -> IResult<&str, Option<Vec<Syllable>>> {
+        let (rest, (_, inner_syllables, _)) = sequence::tuple((
             bytes::complete::tag("["),
-            bytes::complete::is_not("]"),
+            combinator::opt(bytes::complete::is_not("]")),
             bytes::complete::tag("]"),
-        )(i)?;
+        ))(i)?;
 
-        let (_, syllables) = syllables(delimited_syllables)?;
+        match inner_syllables {
+            Some(inner_syllables) => {
+                let (_, syllables) = syllables(inner_syllables)?;
 
-        Ok((rest, syllables))
+                Ok((rest, Some(syllables)))
+            }
+            None => Ok((rest, None)),
+        }
     }
 
     fn jyutping(i: &str) -> IResult<&str, Vec<Syllable>> {
-        let (rest, delimited_syllables) = sequence::delimited(
+        let (rest, inner_syllables) = sequence::delimited(
             bytes::complete::tag("{"),
             bytes::complete::is_not("}"),
             bytes::complete::tag("}"),
         )(i)?;
 
-        let (_, syllables) = syllables(delimited_syllables)?;
+        let (_, syllables) = syllables(inner_syllables)?;
 
         Ok((rest, syllables))
     }
 
     /// takes a series of undelimited syllables such as "ni3hao3" and returns a Vec of Syllables
     fn syllables(i: &str) -> IResult<&str, Vec<Syllable>> {
-        multi::many1(syllable)(i)
+        multi::many0(syllable)(i)
     }
 
     fn syllable(i: &str) -> IResult<&str, Syllable> {
@@ -111,20 +116,26 @@ pub mod parsers {
         Ok((rest, Syllable::new(pronunciation, tone)))
     }
 
-    fn definitions(i: &str) -> IResult<&str, Vec<&str>> {
-        let last_slash = i
-            .rfind('/')
-            .expect("No slash found - definitions method called in wrong place?");
+    fn definitions(i: &str) -> IResult<&str, Option<Vec<&str>>> {
+        if let Some(last_slash) = i.rfind('/') {
+            let (defs, rest) = i.split_at(last_slash + 1);
 
-        let (defs, rest) = i.split_at(last_slash + 1);
+            let (_, untrimmed_defs) = sequence::delimited(
+                bytes::complete::tag("/"),
+                multi::separated_list0(bytes::complete::tag("/"), bytes::complete::is_not("/")),
+                bytes::complete::tag("/"),
+            )(defs)?;
 
-        let (_, untrimmed_defs) = sequence::delimited(
-            bytes::complete::tag("/"),
-            multi::separated_list0(bytes::complete::tag("/"), bytes::complete::is_not("/")),
-            bytes::complete::tag("/"),
-        )(defs)?;
+            if untrimmed_defs.len() == 0 {
+                return Ok((rest, None));
+            }
 
-        Ok((rest, untrimmed_defs.iter().map(|x| x.trim()).collect()))
+            let trimmed: Vec<&str> = untrimmed_defs.iter().map(|x| x.trim()).collect();
+
+            Ok((rest, Some(trimmed)))
+        } else {
+            Ok((i, None))
+        }
     }
 
     #[cfg(test)]
@@ -150,14 +161,20 @@ pub mod parsers {
                 definitions("/watch a movie/three goals/card/(deck of playing cards)/ # hi"),
                 Ok((
                     " # hi",
-                    vec![
+                    Some(vec![
                         "watch a movie",
                         "three goals",
                         "card",
                         "(deck of playing cards)",
-                    ]
+                    ])
                 ))
             )
+        }
+
+        #[test]
+        fn test_parse_missing_definitions() {
+            assert_eq!(definitions("//"), Ok(("", None)));
+            assert_eq!(definitions(""), Ok(("", None)));
         }
 
         #[test]
@@ -166,12 +183,12 @@ pub mod parsers {
                 definitions("/  watch a movie  / three goals/card/(deck of playing cards) /"),
                 Ok((
                     "",
-                    vec![
+                    Some(vec![
                         "watch a movie",
                         "three goals",
                         "card",
                         "(deck of playing cards)",
-                    ]
+                    ])
                 ))
             )
         }
@@ -193,19 +210,22 @@ pub mod parsers {
                 pinyin("[ni3 hao3]"),
                 Ok((
                     "",
-                    vec![Syllable::new("ni", "3"), Syllable::new("hao", "3")]
+                    Some(vec![Syllable::new("ni", "3"), Syllable::new("hao", "3")])
                 ))
             );
+        }
 
+        #[test]
+        fn test_parse_pinyin_with_irregular_spacing() {
             assert_eq!(
                 pinyin("[ni3hao3 ma5]"),
                 Ok((
                     "",
-                    vec![
+                    Some(vec![
                         Syllable::new("ni", "3"),
                         Syllable::new("hao", "3"),
                         Syllable::new("ma", "5")
-                    ]
+                    ])
                 ))
             );
 
@@ -213,13 +233,18 @@ pub mod parsers {
                 pinyin("[ ni3hao3 ma5 ]"),
                 Ok((
                     "",
-                    vec![
+                    Some(vec![
                         Syllable::new("ni", "3"),
                         Syllable::new("hao", "3"),
                         Syllable::new("ma", "5")
-                    ]
+                    ])
                 ))
             );
+        }
+
+        #[test]
+        fn test_parse_empty_pinyin() {
+            assert_eq!(pinyin("[]   "), Ok(("   ", None)));
         }
 
         #[test]
@@ -275,17 +300,20 @@ pub mod parsers {
                     CedictEntry {
                         traditional: "抄字典",
                         simplified: "抄字典",
-                        pinyin: vec![
+                        pinyin: Some(vec![
                             Syllable::new("chao", "1"),
                             Syllable::new("zi", "4"),
                             Syllable::new("dian", "3"),
-                        ],
+                        ]),
                         jyutping: Some(vec![
                             Syllable::new("caau", "3"),
                             Syllable::new("zi", "6"),
                             Syllable::new("din", "2"),
                         ]),
-                        definitions: vec!["to search", "flip through a dictionary [colloquial]"]
+                        definitions: Some(vec![
+                            "to search",
+                            "flip through a dictionary [colloquial]"
+                        ])
                     }
                 ))
             )
@@ -301,13 +329,16 @@ pub mod parsers {
                     CedictEntry {
                         traditional: "抄字典",
                         simplified: "抄字典",
-                        pinyin: vec![
+                        pinyin: Some(vec![
                             Syllable::new("chao", "1"),
                             Syllable::new("zi", "4"),
                             Syllable::new("dian", "3"),
-                        ],
+                        ]),
                         jyutping: None,
-                        definitions: vec!["to search", "flip through a dictionary [colloquial]"]
+                        definitions: Some(vec![
+                            "to search",
+                            "flip through a dictionary [colloquial]"
+                        ])
                     }
                 ))
             )
@@ -323,13 +354,16 @@ pub mod parsers {
                     CedictEntry {
                         traditional: "抄字典",
                         simplified: "抄字典",
-                        pinyin: vec![
+                        pinyin: Some(vec![
                             Syllable::new("chao", "1"),
                             Syllable::new("zi", "4"),
                             Syllable::new("dian", "3"),
-                        ],
+                        ]),
                         jyutping: None,
-                        definitions: vec!["to search", "flip through a dictionary [colloquial]"]
+                        definitions: Some(vec![
+                            "to search",
+                            "flip through a dictionary [colloquial]"
+                        ])
                     }
                 ))
             )
@@ -341,6 +375,7 @@ pub mod parsers {
                 "# this is a comment",
                 "抄字典 抄字典 [chao1 zi4dian3] {caau3 zi6 din2} /to search / flip through a dictionary [colloquial]/",
                 "以身作則 以身作则 [yi3 shen1 zuo4 ze2] /to set an example (idiom); to serve as a model/",
+                "𠌥 𠆿 [] {wu1} /(verb) to lean over; to stoop/",
             ];
 
             for line in lines.iter() {
