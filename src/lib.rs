@@ -41,11 +41,11 @@ pub mod parsers {
 
     fn parse_entry(i: &str) -> IResult<&str, CedictEntry> {
         let (i, traditional) = not_whitespace(i)?;
-        let (i, _) = bytes::complete::tag(" ")(i)?;
+        let (i, _) = character::complete::space1(i)?;
         let (i, simplified) = not_whitespace(i)?;
-        let (i, _) = bytes::complete::tag(" ")(i)?;
+        let (i, _) = character::complete::space1(i)?;
         let (i, pinyin) = pinyin(i)?;
-        let (i, _) = bytes::complete::tag(" ")(i)?;
+        let (i, _) = character::complete::space1(i)?;
         let (i, jyutping) = combinator::opt(jyutping)(i)?;
         let (i, _) = character::complete::space0(i)?;
         let (i, definitions) = definitions(i)?;
