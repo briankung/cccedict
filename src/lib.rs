@@ -29,14 +29,13 @@ pub mod parsers {
     use nom::{bytes, character, combinator, multi, sequence, IResult};
 
     pub fn parse_line(i: &str) -> IResult<&str, Option<CedictEntry>> {
-        let is_comment = combinator::all_consuming(comment)(i).is_ok();
+        combinator::all_consuming(|input| {
+            let (input, entry) = combinator::opt(cedict_entry)(input)?;
+            let (input, _) = character::complete::space0(input)?;
+            let (input, _) = combinator::opt(comment)(input)?;
 
-        if is_comment {
-            Ok(("", None))
-        } else {
-            let (_, entry) = combinator::all_consuming(cedict_entry)(i)?;
-            Ok(("", Some(entry)))
-        }
+            Ok((input, entry))
+        })(i)
     }
 
     fn cedict_entry(i: &str) -> IResult<&str, CedictEntry> {
@@ -113,11 +112,17 @@ pub mod parsers {
     }
 
     fn definitions(i: &str) -> IResult<&str, Vec<&str>> {
-        let (rest, untrimmed_defs) = sequence::delimited(
+        let last_slash = i
+            .rfind('/')
+            .expect("No slash found - definitions method called in wrong place?");
+
+        let (defs, rest) = i.split_at(last_slash + 1);
+
+        let (_, untrimmed_defs) = sequence::delimited(
             bytes::complete::tag("/"),
             multi::separated_list0(bytes::complete::tag("/"), bytes::complete::is_not("/")),
             bytes::complete::tag("/"),
-        )(i)?;
+        )(defs)?;
 
         Ok((rest, untrimmed_defs.iter().map(|x| x.trim()).collect()))
     }
@@ -142,9 +147,9 @@ pub mod parsers {
         #[test]
         fn test_parse_definitions() {
             assert_eq!(
-                definitions("/watch a movie/three goals/card/(deck of playing cards)/"),
+                definitions("/watch a movie/three goals/card/(deck of playing cards)/ # hi"),
                 Ok((
-                    "",
+                    " # hi",
                     vec![
                         "watch a movie",
                         "three goals",
@@ -293,6 +298,28 @@ pub mod parsers {
                 cedict_entry(line),
                 Ok((
                     "",
+                    CedictEntry {
+                        traditional: "抄字典",
+                        simplified: "抄字典",
+                        pinyin: vec![
+                            Syllable::new("chao", "1"),
+                            Syllable::new("zi", "4"),
+                            Syllable::new("dian", "3"),
+                        ],
+                        jyutping: None,
+                        definitions: vec!["to search", "flip through a dictionary [colloquial]"]
+                    }
+                ))
+            )
+        }
+
+        #[test]
+        fn test_cedict_entry_with_comment() {
+            let line = "抄字典 抄字典 [chao1 zi4dian3] /to search / flip through a dictionary [colloquial]/ # adapted from cc-cedict";
+            assert_eq!(
+                cedict_entry(line),
+                Ok((
+                    " # adapted from cc-cedict",
                     CedictEntry {
                         traditional: "抄字典",
                         simplified: "抄字典",
