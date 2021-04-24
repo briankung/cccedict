@@ -24,7 +24,7 @@ impl<'a> Syllable<'a> {
     }
 }
 
-pub(self) mod parsers {
+pub mod parsers {
     use super::*;
     use nom::{bytes, character, combinator, multi, sequence, IResult};
 
