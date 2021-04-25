@@ -3,6 +3,14 @@ name = "redict"
 version = "0.1.0"
 authors = ["Brian Kung <github@briankung.xyz>"]
 edition = "2018"
+license = "MIT"
+repository = "https://github.com/briankung/redict/"
+homepage = "https://github.com/briankung/redict/"
+description = "A CC-Cedict parser with Cantonese support (via cantonese.org readings)"
+keywords = ["chinese", "cedict", "cantonese", "dictionary", "parser"]
+categories = ["text-processing", "localization", "parser-implementations"]
+readme = "README.md"
+
 
 [dependencies]
 nom = "6.1.2"
