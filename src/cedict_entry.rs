@@ -127,24 +127,25 @@ pub(self) mod parsers {
     }
 
     fn definitions(i: &str) -> IResult<&str, Option<Vec<&str>>> {
-        if let Some(last_slash) = i.rfind('/') {
-            let (defs, rest) = i.split_at(last_slash + 1);
+        match i.rfind('/') {
+            None => Ok((i, None)),
+            Some(last_slash) => {
+                let (defs, rest) = i.split_at(last_slash + 1);
 
-            let (_, untrimmed_defs) = sequence::delimited(
-                bytes::complete::tag("/"),
-                multi::separated_list0(bytes::complete::tag("/"), bytes::complete::is_not("/")),
-                bytes::complete::tag("/"),
-            )(defs)?;
+                let (_, untrimmed_defs) = sequence::delimited(
+                    bytes::complete::tag("/"),
+                    multi::separated_list0(bytes::complete::tag("/"), bytes::complete::is_not("/")),
+                    bytes::complete::tag("/"),
+                )(defs)?;
 
-            if untrimmed_defs.len() == 0 {
-                return Ok((rest, None));
+                if untrimmed_defs.is_empty() {
+                    return Ok((rest, None));
+                }
+
+                let trimmed: Vec<&str> = untrimmed_defs.iter().map(|x| x.trim()).collect();
+
+                Ok((rest, Some(trimmed)))
             }
-
-            let trimmed: Vec<&str> = untrimmed_defs.iter().map(|x| x.trim()).collect();
-
-            Ok((rest, Some(trimmed)))
-        } else {
-            Ok((i, None))
         }
     }
 
