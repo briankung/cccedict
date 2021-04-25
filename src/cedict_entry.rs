@@ -26,10 +26,9 @@ impl<'a> Syllable<'a> {
 
 impl CedictEntry<'_> {
     pub fn new(input: &str) -> Result<CedictEntry, BoxError> {
-        let (_, cedict_entry) = parsers::parse_line(&input).unwrap_or(("", None));
-        match cedict_entry {
-            Some(entry) => Ok(entry),
-            None => Err(Box::new(CedictEntryError)),
+        match parsers::parse_line(&input).unwrap_or(("", None)) {
+            (_, Some(entry)) => Ok(entry),
+            (_, None) => Err(Box::new(CedictEntryError)),
         }
     }
 }
@@ -156,27 +155,43 @@ pub(self) mod parsers {
         #[test]
         fn test_new() {
             let line = "抄字典 抄字典 [chao1 zi4dian3] /to search / flip through a dictionary [colloquial]/ # adapted from cc-cedict";
-            if let Ok(entry) = CedictEntry::new(line) {
-                assert_eq!(
-                    entry,
-                    CedictEntry {
-                        traditional: "抄字典",
-                        simplified: "抄字典",
-                        pinyin: Some(vec![
-                            Syllable::new("chao", "1"),
-                            Syllable::new("zi", "4"),
-                            Syllable::new("dian", "3"),
-                        ]),
-                        jyutping: None,
-                        definitions: Some(vec![
-                            "to search",
-                            "flip through a dictionary [colloquial]"
-                        ])
-                    }
-                )
-            } else {
-                panic!()
+            let expected_result = CedictEntry {
+                traditional: "抄字典",
+                simplified: "抄字典",
+                pinyin: Some(vec![
+                    Syllable::new("chao", "1"),
+                    Syllable::new("zi", "4"),
+                    Syllable::new("dian", "3"),
+                ]),
+                jyutping: None,
+                definitions: Some(vec!["to search", "flip through a dictionary [colloquial]"]),
+            };
+
+            match CedictEntry::new(line) {
+                Err(_) => panic!(),
+                Ok(result) => assert_eq!(result, expected_result),
             }
+        }
+
+        #[test]
+        fn test_new_with_invalid_lines() {
+            let line = "hi";
+            match CedictEntry::new(line) {
+                Ok(_) => panic!(),
+                Err(err) => assert_eq!(err.to_string(), "invalid cedict entry input"),
+            };
+
+            let line = "你好";
+            match CedictEntry::new(line) {
+                Ok(_) => panic!(),
+                Err(err) => assert_eq!(err.to_string(), "invalid cedict entry input"),
+            };
+
+            let line = "抄字典 [chao1 zi4dian3] /to search / flip through a dictionary [colloquial]/ # adapted from cc-cedict";
+            match CedictEntry::new(line) {
+                Ok(_) => panic!(),
+                Err(err) => assert_eq!(err.to_string(), "invalid cedict entry input"),
+            };
         }
     }
 
