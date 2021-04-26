@@ -1,5 +1,5 @@
 extern crate redict;
-use redict::BoxError;
+use redict::errors::BoxError;
 
 fn main() -> Result<(), BoxError> {
     Ok(())
