@@ -1,5 +1,5 @@
-extern crate redict;
-use redict::errors::BoxError;
+extern crate cccedict;
+use cccedict::errors::BoxError;
 
 fn main() -> Result<(), BoxError> {
     Ok(())
