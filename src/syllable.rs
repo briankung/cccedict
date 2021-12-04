@@ -17,7 +17,7 @@ Currently there's no validation that either pronunciation or tone are valid inpu
 # use cccedict::syllable::*;
 let syllable = Syllable::new("life", "42");
 
-assert_eq!(syllable.pronunciation, "cow");
+assert_eq!(syllable.pronunciation, "life");
 assert_eq!(syllable.tone, "42");
 ```
 */
