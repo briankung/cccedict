@@ -5,6 +5,7 @@ Chinese/English natural language dictionaries. It has the unique feature of supp
 for [jyutping](https://en.wikipedia.org/wiki/Jyutping) pronunciations.
 */
 
+pub mod cedict;
 pub mod cedict_entry;
 pub mod errors;
 pub mod syllable;

@@ -22,19 +22,19 @@ assert_eq!(syllable.tone, "42");
 ```
 */
 
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
-pub struct Syllable<'a> {
-    pub pronunciation: &'a str,
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct Syllable {
+    pub pronunciation: String,
     /// While both jyutping and pinyin use numbers to denote tones, we are not doing mathematical
-    /// operations with them so they remain `str`s.
-    pub tone: &'a str,
+    /// operations with them so they remain `String`s.
+    pub tone: String,
 }
 
-impl<'a> Syllable<'a> {
-    pub fn new(pronunciation: &'a str, tone: &'a str) -> Self {
+impl Syllable {
+    pub fn new(pronunciation: &str, tone: &str) -> Self {
         Syllable {
-            pronunciation,
-            tone,
+            pronunciation: pronunciation.to_string(),
+            tone: tone.to_string(),
         }
     }
 }
@@ -48,8 +48,8 @@ mod tests {
         assert_eq!(
             Syllable::new("ni", "3"),
             Syllable {
-                pronunciation: "ni",
-                tone: "3"
+                pronunciation: "ni".to_string(),
+                tone: "3".to_string()
             }
         )
     }

@@ -7,8 +7,7 @@ for [jyutping](https://en.wikipedia.org/wiki/Jyutping) pronunciations.
 
 ## Usage
 
-A CedictEntry represents a single entry in a Cedict. As of the current version, this is the only way
-to use the library:
+A `CedictEntry` represents a single entry in a `Cedict`:
 
 ```
 use cccedict::cedict_entry::*;
@@ -32,10 +31,35 @@ assert_eq!(entry.jyutping, Some(
         Syllable::new("maa", "1"),
     ]
 ));
-assert_eq!(entry.definitions, Some(vec!["how are you?"]));
+assert_eq!(entry.definitions, Some(vec!["how are you?".to_string()]));
 ```
+
+You can also instantiate a `Cedict` from a `FromStr`, `Read`, or `AsRef<Path>` implementor:
+
+```
+use cccedict::cedict::Cedict;
+use std::str::FromStr;
+
+let cedict_entries = "\
+你嘅 你嘅 [ni3 ge2] {nei5 ge3} /your's (spoken)/
+你地 你地 [ni3 di4] {nei5 dei6} /you guys; you all/
+你好嗎 你好吗 [ni3 hao3 ma5] {nei5 hou2 maa1} /how are you?/";
+
+let cedict = Cedict::from_str(cedict_entries).unwrap();
+assert_eq!(cedict.entries.len(), 3);
+
+let reader: &[u8] = cedict_entries.as_bytes();
+let cedict = Cedict::from_file(reader).unwrap();
+assert_eq!(cedict.entries.len(), 3);
+
+use std::path::Path;
+let path = Path::new("fixtures/cccanto-test.txt");
+let cedict = Cedict::from_path(path).unwrap();
+assert_eq!(cedict.entries.len(), 3);
+```
+
 
 ## Backlog
 
-- [ ] Add a `Cedict` struct to convert an entire cedict files into `CedictEntry`s
+- [x] Add a `Cedict` struct to convert an entire cedict files into `CedictEntry`s
 - [ ] Implement some useful way of querying said `Cedict` (mimic `entries` API?)

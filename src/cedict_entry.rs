@@ -24,7 +24,7 @@ assert_eq!(entry.jyutping, Some(
         Syllable::new("maa", "1"),
     ]
 ));
-assert_eq!(entry.definitions, Some(vec!["how are you?"]));
+assert_eq!(entry.definitions, Some(vec!["how are you?".to_string()]));
 ```
 */
 
@@ -32,15 +32,15 @@ use crate::errors::{BoxError, CedictEntryError};
 pub use crate::syllable::Syllable;
 
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
-pub struct CedictEntry<'a> {
-    pub traditional: &'a str,
-    pub simplified: &'a str,
-    pub pinyin: Option<Vec<Syllable<'a>>>,
-    pub jyutping: Option<Vec<Syllable<'a>>>,
-    pub definitions: Option<Vec<&'a str>>,
+pub struct CedictEntry {
+    pub traditional: String,
+    pub simplified: String,
+    pub pinyin: Option<Vec<Syllable>>,
+    pub jyutping: Option<Vec<Syllable>>,
+    pub definitions: Option<Vec<String>>,
 }
 
-impl CedictEntry<'_> {
+impl CedictEntry {
     pub fn new(input: &str) -> Result<CedictEntry, BoxError> {
         match parsers::parse_line(input).unwrap_or(("", None)) {
             (_, Some(entry)) => Ok(entry),
@@ -78,8 +78,8 @@ pub(self) mod parsers {
         Ok((
             i,
             CedictEntry {
-                traditional,
-                simplified,
+                traditional: traditional.into(),
+                simplified: simplified.into(),
                 pinyin,
                 jyutping,
                 definitions,
@@ -139,29 +139,28 @@ pub(self) mod parsers {
             character::complete::digit0,
         ))(i)?;
 
-        Ok((rest, Syllable::new(pronunciation, tone)))
+        Ok((rest, Syllable::new(&pronunciation, &tone)))
     }
 
-    fn definitions(i: &str) -> IResult<&str, Option<Vec<&str>>> {
-        match i.rfind('/') {
-            None => Ok((i, None)),
-            Some(last_slash) => {
-                let (defs, rest) = i.split_at(last_slash + 1);
+    fn definitions(i: &str) -> IResult<&str, Option<Vec<String>>> {
+        if let Some(last_slash) = i.rfind('/') {
+            let (defs, rest) = i.split_at(last_slash + 1);
 
-                let (_, untrimmed_defs) = sequence::delimited(
-                    bytes::complete::tag("/"),
-                    multi::separated_list0(bytes::complete::tag("/"), bytes::complete::is_not("/")),
-                    bytes::complete::tag("/"),
-                )(defs)?;
+            let (_, untrimmed_defs) = sequence::delimited(
+                bytes::complete::tag("/"),
+                multi::separated_list0(bytes::complete::tag("/"), bytes::complete::is_not("/")),
+                bytes::complete::tag("/"),
+            )(defs)?;
 
-                if untrimmed_defs.is_empty() {
-                    return Ok((rest, None));
-                }
-
-                let trimmed: Vec<&str> = untrimmed_defs.iter().map(|x| x.trim()).collect();
-
-                Ok((rest, Some(trimmed)))
+            if untrimmed_defs.is_empty() {
+                return Ok((rest, None));
             }
+
+            let trimmed: Vec<String> = untrimmed_defs.iter().map(|x| x.trim().to_owned()).collect();
+
+            Ok((rest, Some(trimmed)))
+        } else {
+            Ok((i, None))
         }
     }
 
@@ -173,15 +172,18 @@ pub(self) mod parsers {
         fn test_new() {
             let line = "抄字典 抄字典 [chao1 zi4dian3] /to search / flip through a dictionary [colloquial]/ # adapted from cc-cedict";
             let expected_result = CedictEntry {
-                traditional: "抄字典",
-                simplified: "抄字典",
+                traditional: "抄字典".into(),
+                simplified: "抄字典".into(),
                 pinyin: Some(vec![
                     Syllable::new("chao", "1"),
                     Syllable::new("zi", "4"),
                     Syllable::new("dian", "3"),
                 ]),
                 jyutping: None,
-                definitions: Some(vec!["to search", "flip through a dictionary [colloquial]"]),
+                definitions: Some(vec![
+                    "to search".into(),
+                    "flip through a dictionary [colloquial]".into(),
+                ]),
             };
 
             match CedictEntry::new(line) {
@@ -237,10 +239,10 @@ pub(self) mod parsers {
                 Ok((
                     "",
                     Some(vec![
-                        "watch a movie",
-                        "three goals",
-                        "card",
-                        "(deck of playing cards)",
+                        "watch a movie".into(),
+                        "three goals".into(),
+                        "card".into(),
+                        "(deck of playing cards)".into(),
                     ])
                 ))
             )
@@ -253,10 +255,10 @@ pub(self) mod parsers {
                 Ok((
                     " # hi",
                     Some(vec![
-                        "watch a movie",
-                        "three goals",
-                        "card",
-                        "(deck of playing cards)",
+                        "watch a movie".into(),
+                        "three goals".into(),
+                        "card".into(),
+                        "(deck of playing cards)".into(),
                     ])
                 ))
             );
@@ -266,10 +268,10 @@ pub(self) mod parsers {
                 Ok((
                     "# hi",
                     Some(vec![
-                        "watch a movie",
-                        "three goals",
-                        "card",
-                        "(deck of playing cards)",
+                        "watch a movie".into(),
+                        "three goals".into(),
+                        "card".into(),
+                        "(deck of playing cards)".into(),
                     ])
                 ))
             )
@@ -288,10 +290,10 @@ pub(self) mod parsers {
                 Ok((
                     "",
                     Some(vec![
-                        "watch a movie",
-                        "three goals",
-                        "card",
-                        "(deck of playing cards)",
+                        "watch a movie".into(),
+                        "three goals".into(),
+                        "card".into(),
+                        "(deck of playing cards)".into(),
                     ])
                 ))
             )
@@ -391,8 +393,8 @@ pub(self) mod parsers {
                 Ok((
                     "",
                     CedictEntry {
-                        traditional: "抄字典",
-                        simplified: "抄字典",
+                        traditional: "抄字典".into(),
+                        simplified: "抄字典".into(),
                         pinyin: Some(vec![
                             Syllable::new("chao", "1"),
                             Syllable::new("zi", "4"),
@@ -404,8 +406,8 @@ pub(self) mod parsers {
                             Syllable::new("din", "2"),
                         ]),
                         definitions: Some(vec![
-                            "to search",
-                            "flip through a dictionary [colloquial]"
+                            "to search".into(),
+                            "flip through a dictionary [colloquial]".into()
                         ])
                     }
                 ))
@@ -421,8 +423,8 @@ pub(self) mod parsers {
                 Ok((
                     "",
                     CedictEntry {
-                        traditional: "抄字典",
-                        simplified: "抄字典",
+                        traditional: "抄字典".into(),
+                        simplified: "抄字典".into(),
                         pinyin: Some(vec![
                             Syllable::new("chao", "1"),
                             Syllable::new("zi", "4"),
@@ -430,8 +432,8 @@ pub(self) mod parsers {
                         ]),
                         jyutping: None,
                         definitions: Some(vec![
-                            "to search",
-                            "flip through a dictionary [colloquial]"
+                            "to search".into(),
+                            "flip through a dictionary [colloquial]".into()
                         ])
                     }
                 ))
@@ -446,8 +448,8 @@ pub(self) mod parsers {
                 Ok((
                     " # adapted from cc-cedict",
                     CedictEntry {
-                        traditional: "抄字典",
-                        simplified: "抄字典",
+                        traditional: "抄字典".into(),
+                        simplified: "抄字典".into(),
                         pinyin: Some(vec![
                             Syllable::new("chao", "1"),
                             Syllable::new("zi", "4"),
@@ -455,8 +457,8 @@ pub(self) mod parsers {
                         ]),
                         jyutping: None,
                         definitions: Some(vec![
-                            "to search",
-                            "flip through a dictionary [colloquial]"
+                            "to search".into(),
+                            "flip through a dictionary [colloquial]".into()
                         ])
                     }
                 ))

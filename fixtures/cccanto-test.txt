@@ -1,0 +1,15 @@
+# CC-Canto
+# A Cantonese dictionary for everyone
+# Version 2017-02-02
+#
+# Copyright (c) 2015-17 Pleco Inc.
+# Distributed under a Creative Commons Attribution-Share Alike 3.0 license (http://creativecommons.org/licenses/by-sa/3.0/)
+#
+# For more information + to submit feedback, see our website at cccanto.org
+#
+# This dictionary is intended to be used in conjunction with the (also open-source) Chinese dictionary CC-CEDICT
+# See mdbg.net to download CC-CEDICT, see cccanto.org to download an open-source list of Cantonese readings for CC-CEDICT
+#
+一件還一件 一件还一件 [yi1 jian4 hai2 yi2 jian4] {jat1 gin6 waan4 jat1 gin6} /a different matter/don't mix another incident with this one/
+一不小心 一不小心 [yi1 bu5 xiao3 xin1] {jat1 bat1 siu2 sam1} /Accidentally/
+一世人 一世人 [yi1 shi4 ren2] {jat1 sai3 jan4} /the whole life (of a person); one's entire life; for a lifetime/
