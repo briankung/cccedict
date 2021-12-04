@@ -10,7 +10,6 @@ for [jyutping](https://en.wikipedia.org/wiki/Jyutping) pronunciations.
 A CedictEntry represents a single entry in a Cedict. As of the current version, this is the only way
 to use the library:
 
-# Usage:
 ```
 use cccedict::cedict_entry::*;
 
