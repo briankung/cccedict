@@ -38,3 +38,19 @@ impl<'a> Syllable<'a> {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_syllable_init() {
+        assert_eq!(
+            Syllable::new("ni", "3"),
+            Syllable {
+                pronunciation: "ni",
+                tone: "3"
+            }
+        )
+    }
+}

@@ -298,17 +298,6 @@ pub(self) mod parsers {
         }
 
         #[test]
-        fn test_syllable_init() {
-            assert_eq!(
-                Syllable::new("ni", "3"),
-                Syllable {
-                    pronunciation: "ni",
-                    tone: "3"
-                }
-            )
-        }
-
-        #[test]
         fn test_parse_pinyin() {
             assert_eq!(
                 pinyin("[ni3 hao3]"),
