@@ -1,4 +1,35 @@
+/*!
+A CedictEntry represents a single entry in a Cedict.
+
+# Usage:
+```
+use cccedict::cedict_entry::*;
+
+let line = "你好嗎 你好吗 [ni3 hao3 ma5] {nei5 hou2 maa1} /how are you?/";
+let entry = CedictEntry::new(line).unwrap();
+
+assert_eq!(entry.traditional, "你好嗎");
+assert_eq!(entry.simplified, "你好吗");
+assert_eq!(entry.pinyin, Some(
+    vec![
+        Syllable::new("ni", "3"),
+        Syllable::new("hao", "3"),
+        Syllable::new("ma", "5"),
+    ]
+));
+assert_eq!(entry.jyutping, Some(
+    vec![
+        Syllable::new("nei", "5"),
+        Syllable::new("hou", "2"),
+        Syllable::new("maa", "1"),
+    ]
+));
+assert_eq!(entry.definitions, Some(vec!["how are you?"]));
+```
+*/
+
 use crate::errors::{BoxError, CedictEntryError};
+pub use crate::syllable::Syllable;
 
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct CedictEntry<'a> {
@@ -9,24 +40,9 @@ pub struct CedictEntry<'a> {
     pub definitions: Option<Vec<&'a str>>,
 }
 
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
-pub struct Syllable<'a> {
-    pub pronunciation: &'a str,
-    pub tone: &'a str,
-}
-
-impl<'a> Syllable<'a> {
-    fn new(pronunciation: &'a str, tone: &'a str) -> Self {
-        Syllable {
-            pronunciation,
-            tone,
-        }
-    }
-}
-
 impl CedictEntry<'_> {
     pub fn new(input: &str) -> Result<CedictEntry, BoxError> {
-        match parsers::parse_line(&input).unwrap_or(("", None)) {
+        match parsers::parse_line(input).unwrap_or(("", None)) {
             (_, Some(entry)) => Ok(entry),
             (_, None) => Err(Box::new(CedictEntryError)),
         }
