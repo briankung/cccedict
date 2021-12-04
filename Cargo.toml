@@ -1,6 +1,6 @@
 [package]
 name = "cccedict"
-version = "0.1.1"
+version = "0.1.2"
 authors = ["Brian Kung <github@briankung.xyz>"]
 edition = "2018"
 license = "MIT"
@@ -9,8 +9,6 @@ homepage = "https://github.com/briankung/cccedict/"
 description = "A CC-Cedict parser with Cantonese support (via cantonese.org readings)"
 keywords = ["chinese", "cedict", "cantonese", "dictionary", "parser"]
 categories = ["text-processing", "localization", "parser-implementations"]
-readme = "README.md"
-
 
 [dependencies]
 nom = "6.1.2"
