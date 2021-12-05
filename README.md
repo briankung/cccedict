@@ -62,4 +62,7 @@ assert_eq!(cedict.entries.len(), 3);
 ## Backlog
 
 - [x] Add a `Cedict` struct to convert an entire cedict files into `CedictEntry`s
-- [ ] Implement some useful way of querying said `Cedict` (mimic `entries` API?)
+- [ ] Allow writes to `Cedict`s
+- [ ] Allow searching a `Cedict`'s entries. Some things to think about:
+        Exact matches, partial matches, and fuzzy matches. Also searching definitions, simplified
+        characters, and traditional characters.
