@@ -57,12 +57,3 @@ let path = Path::new("fixtures/cccanto-test.txt");
 let cedict = Cedict::from_path(path).unwrap();
 assert_eq!(cedict.entries.len(), 3);
 ```
-
-
-## Backlog
-
-- [x] Add a `Cedict` struct to convert an entire cedict files into `CedictEntry`s
-- [ ] Allow writes to `Cedict`s
-- [ ] Allow searching a `Cedict`'s entries. Some things to think about:
-        Exact matches, partial matches, and fuzzy matches. Also searching definitions, simplified
-        characters, and traditional characters.
