@@ -49,7 +49,6 @@ assert_eq!(cedict.entries.len(), 3);
 
 pub use crate::cedict_entry::CedictEntry;
 use crate::errors::BoxError;
-pub use crate::errors::CedictError;
 use std::str::FromStr;
 
 use std::fs::File;
@@ -63,7 +62,7 @@ pub struct Cedict {
 
 impl FromStr for Cedict {
     type Err = BoxError;
-    // add code here
+
     fn from_str(cedict_entries: &str) -> Result<Self, Self::Err> {
         let entries: Vec<CedictEntry> = cedict_entries
             .lines()

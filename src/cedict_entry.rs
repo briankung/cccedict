@@ -139,7 +139,7 @@ pub(self) mod parsers {
             character::complete::digit0,
         ))(i)?;
 
-        Ok((rest, Syllable::new(&pronunciation, &tone)))
+        Ok((rest, Syllable::new(pronunciation, tone)))
     }
 
     fn definitions(i: &str) -> IResult<&str, Option<Vec<String>>> {
