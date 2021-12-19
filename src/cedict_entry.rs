@@ -99,35 +99,34 @@ pub(self) mod parsers {
     }
 
     fn pinyin(i: &str) -> IResult<&str, Option<Vec<Syllable>>> {
-        let (rest, (_, inner_syllables, _)) = sequence::tuple((
+        let (rest, (_, pronunciations, _)) = sequence::tuple((
             bytes::complete::tag("["),
             combinator::opt(bytes::complete::is_not("]")),
             bytes::complete::tag("]"),
         ))(i)?;
 
-        match inner_syllables {
-            Some(inner_syllables) => {
-                let (_, syllables) = syllables(inner_syllables)?;
+        if let Some(pronunciations) = pronunciations {
+            let (_, syllables) = syllables(pronunciations)?;
 
-                Ok((rest, Some(syllables)))
-            }
-            None => Ok((rest, None)),
+            Ok((rest, Some(syllables)))
+        } else {
+            Ok((rest, None))
         }
     }
 
     fn jyutping(i: &str) -> IResult<&str, Vec<Syllable>> {
-        let (rest, inner_syllables) = sequence::delimited(
+        let (rest, pronunciations) = sequence::delimited(
             bytes::complete::tag("{"),
             bytes::complete::is_not("}"),
             bytes::complete::tag("}"),
         )(i)?;
 
-        let (_, syllables) = syllables(inner_syllables)?;
+        let (_, syllables) = syllables(pronunciations)?;
 
         Ok((rest, syllables))
     }
 
-    /// takes a series of undelimited syllables such as "ni3hao3" and returns a Vec of Syllables
+    /// takes a series of possibly undelimited syllables such as "ni3hao3" and returns a Vec of Syllables
     fn syllables(i: &str) -> IResult<&str, Vec<Syllable>> {
         multi::many0(syllable)(i)
     }
@@ -346,6 +345,11 @@ pub(self) mod parsers {
         fn test_parse_pinyin_syllable() {
             assert_eq!(syllable("ni3"), Ok(("", Syllable::new("ni", "3"))));
             assert_eq!(syllable("hao3"), Ok(("", Syllable::new("hao", "3"))));
+        }
+
+        #[test]
+        fn test_parse_pinyin_syllable_without_tone() {
+            assert_eq!(syllable("ma"), Ok(("", Syllable::new("ma", ""))));
         }
 
         #[test]
