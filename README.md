@@ -9,7 +9,7 @@ for [jyutping](https://en.wikipedia.org/wiki/Jyutping) pronunciations.
 
 A `CedictEntry` represents a single entry in a `Cedict`:
 
-```
+```rs
 use cccedict::cedict_entry::*;
 
 let line = "你好嗎 你好吗 [ni3 hao3 ma5] {nei5 hou2 maa1} /how are you?/";
