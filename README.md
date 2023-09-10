@@ -36,7 +36,7 @@ assert_eq!(entry.definitions, Some(vec!["how are you?".to_string()]));
 
 You can also instantiate a `Cedict` from a `FromStr`, `Read`, or `AsRef<Path>` implementor:
 
-```
+```rs
 use cccedict::cedict::Cedict;
 use std::str::FromStr;
 
